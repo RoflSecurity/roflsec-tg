@@ -1,0 +1,45 @@
+# Node modules
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# dotenv
+.env
+
+# OS spécifiques
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Termux / Android
+/data/data/com.termux/files/home/**/*.log
+
+# Compiled files
+dist/
+build/
+
+# Package lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Mac OS
+*.swp
+*.swo
+
+# Coverage
+coverage/
+*.lcov
+
+# Optional npm cache folder
+.npm
