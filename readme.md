@@ -1,0 +1,9 @@
+```
+BOT_TOKEN=urMom
+BOT_OWNER_ID=same
+BOT_OWNER_USERNAME=urMom
+DB_HOST=localhost
+DB_USER=urMom
+DB_PASSWORD=urMom
+DB_DATABASE=urMom
+```
