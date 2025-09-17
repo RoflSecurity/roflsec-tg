@@ -1,4 +1,8 @@
 ```
+npm -g splitit && node .
+```
+
+```
 │  commands
 │  │  help
 │  │  │  callbacks.js
@@ -38,4 +42,7 @@ DB_HOST=localhost
 DB_USER=urMom
 DB_PASSWORD=urMom
 DB_DATABASE=urMom
+```
+```
+CREATE DATABASE IF NOT EXISTS urMom CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;CREATE USER IF NOT EXISTS 'urMom'@'localhost' IDENTIFIED BY 'urMom';GRANT ALL PRIVILEGES ON urMom.* TO 'urMom'@'localhost';FLUSH PRIVILEGES;
 ```
