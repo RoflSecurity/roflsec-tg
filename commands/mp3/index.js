@@ -10,7 +10,8 @@ module.exports = {
     const url = ctx.message.text.split(" ")[1];
     if (!url) return ctx.reply("❌ Please provide a YouTube URL.");
 
-    const outputBase = path.join(__dirname, "..", "output");
+    // Output à la racine du projet
+    const outputBase = path.join(process.cwd(), "output");
     if (!fs.existsSync(outputBase)) fs.mkdirSync(outputBase, { recursive: true });
 
     await ctx.reply("⏳ Please wait, your MP3 is being processed...");
@@ -41,6 +42,7 @@ module.exports = {
         await ctx.reply("❌ Failed to send the MP3 file.");
       }
 
+      // Nettoyer le dossier temporaire
       fs.rmSync(latestFolder, { recursive: true, force: true });
     });
   }
