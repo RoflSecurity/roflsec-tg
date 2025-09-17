@@ -1,5 +1,5 @@
 ```
-npm -g splitit && node .
+npm i -g splitit && node .
 ```
 
 ```
