@@ -88,12 +88,15 @@ module.exports = {
         case "info_chat": {
           console.log("[SENDING CHAT INFO]");
           const chat = ctx.chat;
+          const threadId = ctx.message?.message_thread_id || "N/A";
+
           const text =
             `*Chat Info*\n` +
             `• Chat ID: ${chat.id}\n` +
             `• Type: ${chat.type}\n` +
             `• Title: ${chat.title || "N/A"}\n` +
-            `• Username: ${chat.username || "N/A"}`;
+            `• Username: ${chat.username || "N/A"}\n` +
+            `• Thread ID: ${threadId}`;
 
           await ctx.editMessageText(
             escapeMarkdownV2(text),

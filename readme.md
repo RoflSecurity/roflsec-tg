@@ -1,5 +1,8 @@
+
 ```
 npm i -g splitit && node .
+# or just use node index.js
+# if you don't plan to use mp3 commands
 ```
 
 ```
