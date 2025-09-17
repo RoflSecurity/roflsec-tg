@@ -1,4 +1,36 @@
 ```
+│  commands
+│  │  help
+│  │  │  callbacks.js
+│  │  │  index.js
+│  │  │  inlines.js
+│  │  info
+│  │  │  callbacks.js
+│  │  │  index.js
+│  │  │  inlines.js
+│  │  mp3
+│  │  │  callbacks.js
+│  │  │  index.js
+│  │  │  inlines.js
+│  │  ping
+│  │  │  callbacks.js
+│  │  │  index.js
+│  │  │  inlines.js
+│  events
+│  │  ready.js
+│  │  message.js
+│  │  callback_queries.js
+│  │  inline_queries.js
+│  db
+│  │  pooling.js
+│  index.js
+│  package.json
+│  .env
+│  .gitignore
+│  readme.md
+```
+
+```
 BOT_TOKEN=urMom
 BOT_OWNER_ID=same
 BOT_OWNER_USERNAME=urMom
