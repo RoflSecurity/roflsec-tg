@@ -2,7 +2,7 @@
 node_modules/
 # divers
 output/
-.init.sql
+./.init.sql
 # Logs
 npm-debug.log*
 yarn-debug.log*
