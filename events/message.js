@@ -13,8 +13,10 @@ module.exports = {
 
     const args = ctx.message.text.slice(prefix.length).trim().split(/ +/);
     const cmdName = args.shift().toLowerCase();
-
-    const command = bot.commands.get(cmdName);
+    const command = bot.commands.find(
+      cmd => cmd.name === cmdName || (cmd.aliases && cmd.aliases.includes(cmdName))
+    );
+    //const command = bot.commands.get(cmdName);
     if (!command) return;
 
     // Logger uniquement les commandes
