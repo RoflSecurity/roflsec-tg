@@ -1,3 +1,6 @@
+require("dotenv").config();
+const { pool, query } = require("../db/pooling");
+
 module.exports = {
   name: "message",
   execute: async (ctx, bot) => {
@@ -44,7 +47,7 @@ module.exports = {
     };
 
     try {
-      await command.execute(ctx, args);
+      await command.execute(ctx, args, {pool,query});
     } catch (err) {
       console.error("[message] Error executing command:", err);
       ctx.reply("❌ Une erreur est survenue.");
