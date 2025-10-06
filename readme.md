@@ -1,6 +1,6 @@
 ## install from repo
 ```
-git clone https://github.com/RoflSecurity/roflsec-tg.git && npm i && npm install -g @roflsec/splitit && cd roflsec-tg && node .
+git clone https://github.com/RoflSecurity/roflsec-tg.git && npm install -g @roflsec/splitit && cd roflsec-tg && npm i && node .
 ```
 ```
 │  commands
