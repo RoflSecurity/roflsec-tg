@@ -2,11 +2,12 @@ const { Markup } = require("telegraf");
 
 module.exports = {
   name: "help",
-  description: "Shows all commands grouped by permission",
+  description: "Shows all commands and features",
   permissions: "everyone",
+  alias: ["h"],
   execute: async (ctx) => {
-    console.log("========== [HELP COMMAND EXECUTE] ==========");
-    console.log("[CTX FROM USER]", ctx.from ? { id: ctx.from.id, username: ctx.from.username } : null);
+//    console.log("========== [HELP COMMAND EXECUTE] ==========");
+//    console.log("[CTX FROM USER]", ctx.from ? { id: ctx.from.id, username: ctx.from.username } : null);
 
     const keyboard = Markup.inlineKeyboard([
       [Markup.button.callback("Everyone", "help_everyone")],
