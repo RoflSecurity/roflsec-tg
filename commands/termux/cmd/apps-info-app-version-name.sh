@@ -1,0 +1,1 @@
+exec termux-apps-info-app-version-name.sh "$@"

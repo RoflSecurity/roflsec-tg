@@ -1,0 +1,1 @@
+exec termux-exec-ld-preload-lib "$@"

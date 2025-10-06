@@ -1,0 +1,1 @@
+exec termux-exec-system-linker-exec "$@"

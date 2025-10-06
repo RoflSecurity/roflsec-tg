@@ -5,7 +5,7 @@ const { exec } = require("child_process");
 module.exports = {
     name: "termux",
     description: "Execute Termux local commands via shell wrappers",
-    permission: "owner",
+    permissions: "owner",
     alias:["t"],
     execute: async (ctx, args) => {
         if (ctx.from.id.toString() !== process.env.BOT_OWNER_ID)

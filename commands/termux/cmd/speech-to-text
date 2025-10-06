@@ -1,0 +1,1 @@
+exec termux-speech-to-text "$@"
