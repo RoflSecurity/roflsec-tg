@@ -1,10 +1,7 @@
-
+## install from repo
 ```
-npm i -g splitit && node .
-# or just use node index.js
-# if you don't plan to use mp3 commands
+git clone https://github.com/RoflSecurity/roflsec-tg.git && npm i && npm install -g @roflsec/splitit && cd roflsec-tg && node .
 ```
-
 ```
 │  commands
 │  │  help
