@@ -8,9 +8,9 @@ const TIMEOUT_MS = 5000; // safety timeout
 
 module.exports = {
   name: "cli",
-  description: "Run system commands (owner only, safe)",
+  description: "Run system commands",
   permissions: "owner",
-
+  alias:["c"],
   execute: async (ctx) => {
     if (ctx.from.id !== OWNER_ID) return ctx.reply("❌ You are not allowed to use this command.");
 

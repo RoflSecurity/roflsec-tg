@@ -4,6 +4,7 @@ module.exports = {
   name: "ping",
   description: "Ping the bot and get response time",
   permissions: "everyone",
+  alias: ["p"],
   execute: async (ctx) => {
     const start = Date.now();
     const msg = await ctx.reply("🏓 Pinging...");

@@ -21,7 +21,7 @@ module.exports = {
   name: "ocr",
   description: "Extract text from an image and translate it into English. Usage: !ocr <lang> (reply to an image)",
   permissions: "everyone",
-
+  alias: ["o"],
   execute: async (ctx) => {
     const args = ctx.message.text.split(" ").slice(1);
     const lang = args[0]?.toLowerCase();

@@ -3,8 +3,9 @@ require("dotenv").config()
 const OWNER_ID = parseInt(process.env.BOT_OWNER_ID)
 module.exports = {
   name: "eval",
-  description: "Evaluate JS code (owner only)",
+  description: "Evaluate JS code",
   permissions: "owner",
+  alias: ["e"],
   execute: async (ctx) => {
     if (ctx.from.id !== OWNER_ID) return ctx.reply("❌ You are not allowed to use this command.")
     const code = ctx.message.text.split(" ").slice(1).join(" ")

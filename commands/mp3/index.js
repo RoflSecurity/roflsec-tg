@@ -6,6 +6,7 @@ module.exports = {
   name: "mp3",
   description: "Download a YouTube video as MP3",
   permissions: "everyone",
+  alias: ["m"],
   execute: async (ctx) => {
     const url = ctx.message.text.split(" ")[1];
     if (!url) return ctx.reply("❌ Please provide a YouTube URL.");

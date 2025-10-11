@@ -10,6 +10,7 @@ const mainKeyboard = Markup.inlineKeyboard([
 module.exports = {
   name: "info",
   description: "Display info",
+  alias: ["i"],
   execute: async (ctx) => {
     console.log("========== [INFO COMMAND EXECUTE] ==========");
     console.log("[CTX FROM USER]", { id: ctx.from.id, username: ctx.from.username });
