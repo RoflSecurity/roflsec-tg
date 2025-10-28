@@ -2,7 +2,7 @@ module.exports = {
   name: "kick",
   description: "Kick a user from the chat",
   permissions: "admin",
-  aliases: ["k"],
+  alias: ["k"],
 
   execute: async (ctx, args) => {
     try {

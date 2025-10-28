@@ -2,7 +2,7 @@ module.exports = {
   name: "unban",
   description: "Unban a user from the chat (allow them to rejoin).",
   permissions: "admin",
-  aliases: ["pardon"],
+  alias: ["u"],
 
   execute: async (ctx, args) => {
     try {

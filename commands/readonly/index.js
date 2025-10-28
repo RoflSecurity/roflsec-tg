@@ -2,7 +2,7 @@ module.exports = {
   name: "readonly",
   description: "Set a user to read-only mode (mute indefinitely).",
   permissions: "admin",
-  aliases: ["r", "mute"],
+  alias: ["r", "mute"],
 
   execute: async (ctx, args) => {
     try {
