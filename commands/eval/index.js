@@ -8,8 +8,8 @@ module.exports = {
   alias: ["e"],
   execute: async (ctx) => {
     if (ctx.from.id !== OWNER_ID) return ctx.reply("❌ You are not allowed to use this command.");
-    if (ctx.message.text.includes(["process", "token", "mysql", "require"])) return ctx.reply ("urmum");
-  const code = ctx.message.text.split(" ").slice(1).join(" ")
+    if (["process", "token", "mysql", "require"].some(word => ctx.message.text.includes(word))) return ctx.reply("urmum");
+    const code = ctx.message.text.split(" ").slice(1).join(" ")
     if (!code) return ctx.reply("❌ Please provide some code to evaluate.")
     try {
       const result = await eval(`(async () => { return ${code} })()`)
