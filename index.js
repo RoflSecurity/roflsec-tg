@@ -4,6 +4,9 @@ const fs = require("fs");
 const path = require("path");
 const bot = new Telegraf(process.env.BOT_TOKEN);
 bot.commands = new Map();
+/*
+If using bot.launch(), you can pass { dropPendingUpdates: true } to it
+*/
 const commandsPath = path.join(__dirname, "commands");
 fs.readdirSync(commandsPath).forEach((folder) => {
   const folderPath = path.join(commandsPath, folder);
@@ -36,7 +39,7 @@ fs.readdirSync(eventsPath).forEach((file) => {
   }
   console.log(`[index] Loaded event: ${file}`);
 });
-bot.launch({ handleSIGINT: false, handleSIGTERM: false });
+bot.launch({ handleSIGINT: false, handleSIGTERM: false, /*dropPendingUpdates: true*/ });
 const handleShutdown = async (signal) => {
   console.log(`Shutting down (${signal})`);
   await bot.telegram.sendMessage(process.env.BOT_LOGS, `[${signal}] bot down!`);

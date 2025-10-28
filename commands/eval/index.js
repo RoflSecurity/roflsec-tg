@@ -7,8 +7,9 @@ module.exports = {
   permissions: "owner",
   alias: ["e"],
   execute: async (ctx) => {
-    if (ctx.from.id !== OWNER_ID) return ctx.reply("❌ You are not allowed to use this command.")
-    const code = ctx.message.text.split(" ").slice(1).join(" ")
+    if (ctx.from.id !== OWNER_ID) return ctx.reply("❌ You are not allowed to use this command.");
+    if (ctx.message.text.includes(["process", "token", "mysql", "require"])) return ctx.reply ("urmum");
+  const code = ctx.message.text.split(" ").slice(1).join(" ")
     if (!code) return ctx.reply("❌ Please provide some code to evaluate.")
     try {
       const result = await eval(`(async () => { return ${code} })()`)
