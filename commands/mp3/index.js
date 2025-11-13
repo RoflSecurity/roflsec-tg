@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { exec } = require("child_process");
+const { spawn } = require("child_process");
 
 module.exports = {
   name: "mp3",
@@ -19,28 +19,33 @@ module.exports = {
 
     await ctx.reply("⏳ Please wait, processing your audio with DemIt...");
 
-    exec(`demit "${url}"`, { cwd: baseDir }, async (error) => {
-      if (error) {
-        console.error(error);
-        return ctx.reply("❌ An error occurred while processing your request.");
+    // Spawn demit as a child process
+    const demitProcess = spawn("demit", [url], { cwd: baseDir, stdio: "inherit" });
+
+    demitProcess.on("error", (err) => {
+      console.error("Failed to start DemIt:", err);
+      ctx.reply("❌ Could not start DemIt.");
+    });
+
+    demitProcess.on("close", async (code) => {
+      if (code !== 0) {
+        console.error("DemIt exited with code", code);
+        return ctx.reply("❌ DemIt failed to process the audio.");
       }
-      const mp3Files = fs.readdirSync(outputDir)
-        .filter(f => f.endsWith(".mp3"))
-        .map(name => ({
-          name,
-          time: fs.statSync(path.join(outputDir, name)).mtime.getTime()
-        }))
-        .sort((a, b) => b.time - a.time);
+
+      // At this point, all files should be fully generated
+      const mp3Files = fs.readdirSync(outputDir).filter(f => f.endsWith(".mp3"));
       if (!mp3Files.length) return ctx.reply("❌ No MP3 file found in output.");
-      const latestMP3 = path.join(outputDir, mp3Files[0].name);
+
+      const latestMP3 = path.join(outputDir, mp3Files[mp3Files.length - 1]);
       await ctx.reply(`🎵 Here's your original MP3:`);
       try {
-        await ctx.replyWithDocument({ source: latestMP3, filename: mp3Files[0].name });
+        await ctx.replyWithDocument({ source: latestMP3, filename: path.basename(latestMP3) });
       } catch (err) {
         console.error("Failed to send original MP3:", err);
       }
-      if (!fs.existsSync(separatedDir))
-        return ctx.reply("❌ No separated tracks found (DemIt output missing).");
+
+      if (!fs.existsSync(separatedDir)) return ctx.reply("❌ No separated tracks found (DemIt output missing).");
 
       const tracks = fs.readdirSync(separatedDir)
         .map(name => ({ name, time: fs.statSync(path.join(separatedDir, name)).mtime.getTime() }))
@@ -63,6 +68,8 @@ module.exports = {
           console.error(`Failed to send ${file}:`, err);
         }
       }
+
+      // Clean up
       fs.rmSync(latestTrackDir, { recursive: true, force: true });
     });
   }
