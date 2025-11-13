@@ -72,6 +72,7 @@ module.exports = {
   }
 };
 */
+
 const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
@@ -94,12 +95,7 @@ module.exports = {
 
     await ctx.reply("⏳ Downloading and processing your audio with DemIt...");
 
-    // Dossier temporaire unique pour ce traitement
-    const tempFolderName = `demit_${Date.now()}`;
-    const tempSeparated = path.join(separatedDir, tempFolderName);
-    fs.mkdirSync(tempSeparated, { recursive: true });
-
-    exec(`demit "${url}"`, { cwd: baseDir }, async (err, stdout, stderr) => {
+    exec(`demit "${url}"`, { cwd: baseDir }, async (err) => {
       if (err) {
         console.error("DemIt error:", err);
         return ctx.reply("❌ Error processing the audio.");
@@ -120,7 +116,9 @@ module.exports = {
       const stemFolders = fs.readdirSync(separatedDir)
         .filter(f => fs.statSync(path.join(separatedDir, f)).isDirectory());
 
-      // On prend uniquement le dossier de ce traitement
+      if (!stemFolders.length) return ctx.reply("❌ No stems found.");
+
+      // On prend le **dernier dossier créé**, qui correspond au dernier traitement
       const stemFolderPath = path.join(separatedDir, stemFolders[stemFolders.length - 1]);
       const stemFiles = fs.readdirSync(stemFolderPath).filter(f => f.toLowerCase().endsWith(".mp3"));
       if (!stemFiles.length) return ctx.reply("❌ No stems found.");
