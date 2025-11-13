@@ -2,6 +2,15 @@ const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
 
+function sanitizeFilename(name) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[<>:"/\\|?*]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 module.exports = {
   name: "mp3",
   description: "Download a YouTube video as MP3 and separate vocals with DemIt",
@@ -16,54 +25,66 @@ module.exports = {
     const separatedDir = path.join(baseDir, "separated");
 
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+    if (!fs.existsSync(separatedDir)) fs.mkdirSync(separatedDir, { recursive: true });
 
-    await ctx.reply("⏳ Processing your audio with DemIt...");
+    await ctx.reply("⏳ Downloading and processing your audio...");
 
-    // Crée un dossier unique pour ce run
-    const runId = `demit_${Date.now()}`;
-    const tempOutput = path.join(outputDir, runId);
+    const tempFolderName = `demit_${Date.now()}`;
+    const tempOutput = path.join(outputDir, tempFolderName);
+    const tempSeparated = path.join(separatedDir, tempFolderName);
     fs.mkdirSync(tempOutput, { recursive: true });
+    fs.mkdirSync(tempSeparated, { recursive: true });
 
-    // Lance DemIt en spécifiant le dossier de sortie unique
-    exec(`demit "${url}" -o "${tempOutput}"`, { cwd: baseDir }, async (err) => {
+    // Télécharger le MP3
+    exec(`yt-dlp -x --audio-format mp3 "${url}" -o "${tempOutput}/%(title)s.%(ext)s"`, async (err) => {
       if (err) {
         console.error(err);
-        return ctx.reply("❌ Error processing the audio.");
+        return ctx.reply("❌ Error downloading the MP3.");
       }
 
-      // Donne un peu de temps à yt-dlp pour écrire
-      await new Promise(r => setTimeout(r, 1500));
+      let mp3Files = fs.readdirSync(tempOutput).filter(f => f.endsWith(".mp3"));
+      if (!mp3Files.length) return ctx.reply("❌ No MP3 found after download.");
 
-      // === MP3 original ===
-      const mp3Files = fs.readdirSync(tempOutput).filter(f => f.endsWith(".mp3"));
-      if (!mp3Files.length) return ctx.reply("❌ No MP3 found.");
-      const originalMP3 = path.join(tempOutput, mp3Files[0]);
+      const safeName = sanitizeFilename(mp3Files[0]);
+      const originalMP3 = path.join(tempOutput, safeName);
+      fs.renameSync(path.join(tempOutput, mp3Files[0]), originalMP3);
+
+      // Envoyer le MP3 original immédiatement
       await ctx.reply(`🎵 Here's your original MP3:`);
       try {
-        await ctx.replyWithDocument({ source: originalMP3, filename: mp3Files[0] });
+        await ctx.replyWithDocument({ source: originalMP3, filename: safeName });
       } catch (e) {
         console.error("Failed to send original MP3:", e);
       }
 
-      // === Stems séparés ===
-      const htdemucsDir = path.join(tempOutput, "htdemucs");
-      if (!fs.existsSync(htdemucsDir)) return ctx.reply("❌ No stems found.");
-
-      const stemTracks = fs.readdirSync(htdemucsDir).filter(f => f.endsWith(".mp3"));
-      if (!stemTracks.length) return ctx.reply("❌ No stems found.");
-
-      await ctx.reply(`🎧 Separation complete! Sending stems...`);
-      for (const file of stemTracks) {
-        const filePath = path.join(htdemucsDir, file);
-        try {
-          await ctx.replyWithDocument({ source: filePath, filename: file });
-        } catch (e) {
-          console.error(`Failed to send ${file}:`, e);
+      // Séparer les stems en arrière-plan
+      const demucsCmd = `~/demucs-venv/bin/demucs --two-stems vocals -d cpu --mp3 -o "${tempSeparated}" "${originalMP3}"`;
+      exec(demucsCmd, async (err) => {
+        if (err) {
+          console.error(err);
+          return ctx.reply("❌ Error separating stems.");
         }
-      }
 
-      // === Nettoyage ===
-      fs.rmSync(tempOutput, { recursive: true, force: true });
+        const htdemucsDir = path.join(tempSeparated, "htdemucs");
+        if (!fs.existsSync(htdemucsDir)) return ctx.reply("❌ No stems found.");
+
+        const stemTracks = fs.readdirSync(htdemucsDir).filter(f => f.endsWith(".mp3"));
+        if (!stemTracks.length) return ctx.reply("❌ No stems found.");
+
+        await ctx.reply(`🎧 Separation complete! Sending stems...`);
+        for (const file of stemTracks) {
+          const filePath = path.join(htdemucsDir, file);
+          try {
+            await ctx.replyWithDocument({ source: filePath, filename: file });
+          } catch (e) {
+            console.error(`Failed to send ${file}:`, e);
+          }
+        }
+
+        // Nettoyage
+        fs.rmSync(tempOutput, { recursive: true, force: true });
+        fs.rmSync(tempSeparated, { recursive: true, force: true });
+      });
     });
   }
 };
