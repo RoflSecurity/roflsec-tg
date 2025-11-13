@@ -3,81 +3,87 @@ const path = require("path");
 const { exec } = require("child_process");
 
 module.exports = {
-	name: "mp3",
-	description: "Download a YouTube video as MP3 and separate vocals with DemIt",
-	permissions: "everyone",
-	alias: ["m"],
-	execute: async (ctx) => {
-		const url = ctx.message.text.split(" ")[1];
-		if (!url) return ctx.reply("❌ Please provide a YouTube URL.");
+  name: "mp3",
+  description: "Download a YouTube video as MP3 and separate vocals with DemIt",
+  permissions: "everyone",
+  alias: ["m"],
+  execute: async (ctx) => {
+    const url = ctx.message.text.split(" ")[1];
+    if (!url) return ctx.reply("❌ Please provide a YouTube URL.");
 
-		const baseDir = process.cwd();
-		const outputDir = path.join(baseDir, "output");
-		const separatedDir = path.join(baseDir, "separated");
+    const baseDir = process.cwd();
+    const outputDir = path.join(baseDir, "output");
+    const separatedDir = path.join(baseDir, "separated");
 
-		if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-		await ctx.reply("⏳ Processing your audio with DemIt...");
+    await ctx.reply("⏳ Processing your audio with DemIt...");
 
-		const tempFolderName = `demit_${Date.now()}`;
-		const tempOutput = path.join(outputDir, tempFolderName);
-		fs.mkdirSync(tempOutput, { recursive: true });
-		exec(`demit "${url}" -o "${tempOutput}"`, { cwd: baseDir }, async (err) => {
-			if (err) {
-				console.error(err);
-				return ctx.reply("❌ Error processing the audio.");
-			}
+    // Nom unique pour ce traitement
+    const runId = Date.now().toString();
+    const tempOutput = path.join(outputDir, `demit_${runId}`);
+    fs.mkdirSync(tempOutput, { recursive: true });
 
-			await new Promise(r => setTimeout(r, 1500));
+    exec(`demit "${url}"`, { cwd: baseDir }, async (err) => {
+      if (err) {
+        console.error(err);
+        return ctx.reply("❌ Error processing the audio.");
+      }
 
-			// Chercher le MP3 dans tous les sous-dossiers possibles
-			const allDirs = [tempOutput, outputDir];
-			let mp3Files = [];
-			for (const dir of allDirs) {
-				if (fs.existsSync(dir)) {
-					const found = fs.readdirSync(dir).filter(f => f.endsWith(".mp3"));
-					if (found.length) {
-						mp3Files = found.map(f => path.join(dir, f));
-						break;
-					}
-				}
-			}
+      // Laisse à yt-dlp/ffmpeg le temps d’écrire le fichier
+      await new Promise(r => setTimeout(r, 1500));
 
-			if (!mp3Files.length) {
-				console.error("❌ No MP3 found in any output directory.");
-				console.error("🪶 Checked:", allDirs);
-				console.error("🪶 Files in output:", fs.readdirSync(outputDir));
-				return ctx.reply("❌ No MP3 found.");
-			}
+      // === Récupération du MP3 le plus récent ===
+      const allMp3 = fs.readdirSync(outputDir)
+        .filter(f => f.endsWith(".mp3"))
+        .map(f => ({
+          name: f,
+          path: path.join(outputDir, f),
+          time: fs.statSync(path.join(outputDir, f)).mtimeMs
+        }))
+        .sort((a, b) => b.time - a.time);
 
-			const originalMP3 = mp3Files[0];
-			await ctx.reply("🎵 Here's your original MP3:");
-			try {
-				await ctx.replyWithDocument({ source: originalMP3, filename: path.basename(originalMP3) });
-			} catch (e) {
-				console.error("Failed to send original MP3:", e);
-			}
+      if (!allMp3.length) {
+        console.error("❌ No MP3 found.");
+        return ctx.reply("❌ No MP3 found.");
+      }
 
-			// === Recherche automatique des stems ===
-			const demucsBase = path.join(separatedDir, "htdemucs");
-			if (!fs.existsSync(demucsBase)) return ctx.reply("❌ No stems found.");
+      const newestMP3 = allMp3[0];
+      console.log("🎵 Latest MP3:", newestMP3.name);
+      await ctx.reply(`🎵 Here's your original MP3:`);
+      try {
+        await ctx.replyWithDocument({ source: newestMP3.path, filename: newestMP3.name });
+      } catch (e) {
+        console.error("Failed to send MP3:", e);
+      }
 
-			const folders = fs.readdirSync(demucsBase).filter(f => fs.statSync(path.join(demucsBase, f)).isDirectory());
-			if (!folders.length) return ctx.reply("❌ No stems folder found.");
+      // === Récupération du dossier htdemucs le plus récent ===
+      const htdemucsDir = path.join(separatedDir, "htdemucs");
+      if (!fs.existsSync(htdemucsDir)) return ctx.reply("❌ No stems found.");
 
-			const lastFolder = path.join(demucsBase, folders.sort((a, b) => fs.statSync(path.join(demucsBase, b)).mtimeMs - fs.statSync(path.join(demucsBase, a)).mtimeMs)[0]);
-			const stems = fs.readdirSync(lastFolder).filter(f => f.endsWith(".mp3"));
-			if (!stems.length) return ctx.reply("❌ No stems found in last Demucs output.");
+      const subDirs = fs.readdirSync(htdemucsDir)
+        .map(f => ({
+          name: f,
+          path: path.join(htdemucsDir, f),
+          time: fs.statSync(path.join(htdemucsDir, f)).mtimeMs
+        }))
+        .filter(d => fs.statSync(d.path).isDirectory())
+        .sort((a, b) => b.time - a.time);
 
-			await ctx.reply("🎧 Separation complete! Sending stems...");
-			for (const file of stems) {
-				try {
-					await ctx.replyWithDocument({ source: path.join(lastFolder, file), filename: file });
-				} catch (e) {
-					console.error(`Failed to send ${file}:`, e);
-				}
-			}
-		});
+      if (!subDirs.length) return ctx.reply("❌ No stems folder found.");
 
-	}
+      const latestStemDir = subDirs[0].path;
+      const stems = fs.readdirSync(latestStemDir).filter(f => f.endsWith(".mp3"));
+      if (!stems.length) return ctx.reply("❌ No stems found.");
+
+      await ctx.reply("🎧 Separation complete! Sending stems...");
+      for (const file of stems) {
+        try {
+          await ctx.replyWithDocument({ source: path.join(latestStemDir, file), filename: file });
+        } catch (e) {
+          console.error(`Failed to send ${file}:`, e);
+        }
+      }
+    });
+  }
 };
