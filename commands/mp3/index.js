@@ -33,8 +33,11 @@ module.exports = {
     await ctx.reply("⏳ Downloading and processing your audio...");
 
     try {
-      // Lancer DemIt et attendre qu'il termine
+      // === Lancer DemIt et attendre la fin ===
       await execAsync(`demit "${url}"`, { cwd: baseDir });
+
+      // === Attendre brièvement pour être sûr que tous les fichiers sont écrits ===
+      await new Promise(r => setTimeout(r, 1000));
 
       // === Envoi du MP3 original ===
       const mp3Files = fs.readdirSync(outputDir).filter(f => f.toLowerCase().endsWith(".mp3"));
@@ -45,7 +48,6 @@ module.exports = {
 
       // === Envoi des stems séparés ===
       if (!fs.existsSync(separatedDir)) return ctx.reply("❌ No stems found.");
-
       const stemTracks = fs.readdirSync(separatedDir).filter(f => f.toLowerCase().endsWith(".mp3"));
       if (!stemTracks.length) return ctx.reply("❌ No stems found.");
 
