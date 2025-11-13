@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { spawn } = require("child_process");
+const { exec } = require("child_process");
 
 module.exports = {
   name: "mp3",
@@ -17,48 +17,46 @@ module.exports = {
 
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-    await ctx.reply("⏳ Please wait, processing your audio with DemIt...");
+    await ctx.reply("⏳ Processing your audio with DemIt...");
 
-    // Spawn demit as a child process
-    const demitProcess = spawn("demit", [url], { cwd: baseDir, stdio: "inherit" });
-
-    demitProcess.on("error", (err) => {
-      console.error("Failed to start DemIt:", err);
-      ctx.reply("❌ Could not start DemIt.");
-    });
-
-    demitProcess.on("close", async (code) => {
-      if (code !== 0) {
-        console.error("DemIt exited with code", code);
-        return ctx.reply("❌ DemIt failed to process the audio.");
+    exec(`demit "${url}"`, { cwd: baseDir }, async (error) => {
+      if (error) {
+        console.error(error);
+        return ctx.reply("❌ An error occurred while processing your request.");
       }
 
-      // At this point, all files should be fully generated
+      // --- récupérer le MP3 original généré ---
       const mp3Files = fs.readdirSync(outputDir).filter(f => f.endsWith(".mp3"));
       if (!mp3Files.length) return ctx.reply("❌ No MP3 file found in output.");
+      
+      // On prend le dernier MP3 modifié (le plus récent)
+      const latestMP3 = mp3Files
+        .map(name => ({ name, time: fs.statSync(path.join(outputDir, name)).mtime.getTime() }))
+        .sort((a, b) => b.time - a.time)[0];
+      const originalMP3Path = path.join(outputDir, latestMP3.name);
 
-      const latestMP3 = path.join(outputDir, mp3Files[mp3Files.length - 1]);
-      await ctx.reply(`🎵 Here's your original MP3:`);
+      await ctx.reply("🎵 Here's your original MP3:");
       try {
-        await ctx.replyWithDocument({ source: latestMP3, filename: path.basename(latestMP3) });
+        await ctx.replyWithDocument({ source: originalMP3Path, filename: latestMP3.name });
       } catch (err) {
         console.error("Failed to send original MP3:", err);
       }
 
-      if (!fs.existsSync(separatedDir)) return ctx.reply("❌ No separated tracks found (DemIt output missing).");
+      // --- récupérer le dossier séparé le plus récent ---
+      if (!fs.existsSync(separatedDir))
+        return ctx.reply("❌ No separated tracks found (DemIt output missing).");
 
-      const tracks = fs.readdirSync(separatedDir)
+      const trackDirs = fs.readdirSync(separatedDir)
         .map(name => ({ name, time: fs.statSync(path.join(separatedDir, name)).mtime.getTime() }))
         .sort((a, b) => b.time - a.time);
 
-      if (!tracks.length) return ctx.reply("❌ No separated track folder found.");
+      if (!trackDirs.length) return ctx.reply("❌ No separated track folder found.");
 
-      const latestTrackDir = path.join(separatedDir, tracks[0].name);
+      const latestTrackDir = path.join(separatedDir, trackDirs[0].name);
       const separatedMP3s = fs.readdirSync(latestTrackDir).filter(f => f.endsWith(".mp3"));
-
       if (!separatedMP3s.length) return ctx.reply("❌ No separated MP3 files found.");
 
-      await ctx.reply(`🎧 Separation complete for **${tracks[0].name}**! Sending stems...`);
+      await ctx.reply(`🎧 Separation complete for **${trackDirs[0].name}**! Sending stems...`);
 
       for (const file of separatedMP3s) {
         const filePath = path.join(latestTrackDir, file);
@@ -69,7 +67,7 @@ module.exports = {
         }
       }
 
-      // Clean up
+      // --- nettoyage ---
       fs.rmSync(latestTrackDir, { recursive: true, force: true });
     });
   }
