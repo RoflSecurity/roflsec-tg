@@ -13,62 +13,54 @@ module.exports = {
 
     const baseDir = process.cwd();
     const outputDir = path.join(baseDir, "output");
-    const separatedDir = path.join(baseDir, "separated", "htdemucs");
+    const separatedDir = path.join(baseDir, "separated");
 
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
     await ctx.reply("⏳ Processing your audio with DemIt...");
 
-    exec(`demit "${url}"`, { cwd: baseDir }, async (error) => {
-      if (error) {
-        console.error(error);
-        return ctx.reply("❌ An error occurred while processing your request.");
+    // Dossier temporaire unique pour ce traitement
+    const tempFolderName = `demit_${Date.now()}`;
+    const tempOutput = path.join(outputDir, tempFolderName);
+    fs.mkdirSync(tempOutput, { recursive: true });
+
+    exec(`demit "${url}" -o "${tempOutput}"`, { cwd: baseDir }, async (err) => {
+      if (err) {
+        console.error(err);
+        return ctx.reply("❌ Error processing the audio.");
       }
 
-      // --- récupérer le MP3 original généré ---
-      const mp3Files = fs.readdirSync(outputDir).filter(f => f.endsWith(".mp3"));
-      if (!mp3Files.length) return ctx.reply("❌ No MP3 file found in output.");
-      
-      // On prend le dernier MP3 modifié (le plus récent)
-      const latestMP3 = mp3Files
-        .map(name => ({ name, time: fs.statSync(path.join(outputDir, name)).mtime.getTime() }))
-        .sort((a, b) => b.time - a.time)[0];
-      const originalMP3Path = path.join(outputDir, latestMP3.name);
-
-      await ctx.reply("🎵 Here's your original MP3:");
+      // === Envoi du MP3 original ===
+      const mp3Files = fs.readdirSync(tempOutput).filter(f => f.endsWith(".mp3"));
+      if (!mp3Files.length) return ctx.reply("❌ No MP3 found.");
+      const originalMP3 = path.join(tempOutput, mp3Files[0]);
+      await ctx.reply(`🎵 Here's your original MP3:`);
       try {
-        await ctx.replyWithDocument({ source: originalMP3Path, filename: latestMP3.name });
-      } catch (err) {
-        console.error("Failed to send original MP3:", err);
+        await ctx.replyWithDocument({ source: originalMP3, filename: mp3Files[0] });
+      } catch (e) {
+        console.error("Failed to send original MP3:", e);
       }
 
-      // --- récupérer le dossier séparé le plus récent ---
-      if (!fs.existsSync(separatedDir))
-        return ctx.reply("❌ No separated tracks found (DemIt output missing).");
+      // === Envoi des stems séparés ===
+      const htdemucsDir = path.join(separatedDir, tempFolderName, "htdemucs");
+      if (!fs.existsSync(htdemucsDir)) return ctx.reply("❌ No stems found.");
 
-      const trackDirs = fs.readdirSync(separatedDir)
-        .map(name => ({ name, time: fs.statSync(path.join(separatedDir, name)).mtime.getTime() }))
-        .sort((a, b) => b.time - a.time);
+      const stemTracks = fs.readdirSync(htdemucsDir).filter(f => f.endsWith(".mp3"));
+      if (!stemTracks.length) return ctx.reply("❌ No stems found.");
 
-      if (!trackDirs.length) return ctx.reply("❌ No separated track folder found.");
-
-      const latestTrackDir = path.join(separatedDir, trackDirs[0].name);
-      const separatedMP3s = fs.readdirSync(latestTrackDir).filter(f => f.endsWith(".mp3"));
-      if (!separatedMP3s.length) return ctx.reply("❌ No separated MP3 files found.");
-
-      await ctx.reply(`🎧 Separation complete for **${trackDirs[0].name}**! Sending stems...`);
-
-      for (const file of separatedMP3s) {
-        const filePath = path.join(latestTrackDir, file);
+      await ctx.reply(`🎧 Separation complete! Sending stems...`);
+      for (const file of stemTracks) {
+        const filePath = path.join(htdemucsDir, file);
         try {
           await ctx.replyWithDocument({ source: filePath, filename: file });
-        } catch (err) {
-          console.error(`Failed to send ${file}:`, err);
+        } catch (e) {
+          console.error(`Failed to send ${file}:`, e);
         }
       }
 
-      // --- nettoyage ---
-      fs.rmSync(latestTrackDir, { recursive: true, force: true });
+      // === Nettoyage ===
+      fs.rmSync(tempOutput, { recursive: true, force: true });
+      fs.rmSync(path.join(separatedDir, tempFolderName), { recursive: true, force: true });
     });
   }
 };
