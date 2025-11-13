@@ -19,7 +19,6 @@ module.exports = {
 
     await ctx.reply("⏳ Processing your audio with DemIt...");
 
-    // Dossier temporaire unique pour ce traitement
     const tempFolderName = `demit_${Date.now()}`;
     const tempOutput = path.join(outputDir, tempFolderName);
     fs.mkdirSync(tempOutput, { recursive: true });
@@ -30,7 +29,8 @@ module.exports = {
         return ctx.reply("❌ Error processing the audio.");
       }
 
-      // === Envoi du MP3 original ===
+      await new Promise(r => setTimeout(r, 1500));
+
       const mp3Files = fs.readdirSync(tempOutput).filter(f => f.endsWith(".mp3"));
       if (!mp3Files.length) return ctx.reply("❌ No MP3 found.");
       const originalMP3 = path.join(tempOutput, mp3Files[0]);
@@ -41,8 +41,7 @@ module.exports = {
         console.error("Failed to send original MP3:", e);
       }
 
-      // === Envoi des stems séparés ===
-      const htdemucsDir = path.join(separatedDir, tempFolderName, "htdemucs");
+      const htdemucsDir = path.join(separatedDir, "htdemucs");
       if (!fs.existsSync(htdemucsDir)) return ctx.reply("❌ No stems found.");
 
       const stemTracks = fs.readdirSync(htdemucsDir).filter(f => f.endsWith(".mp3"));
@@ -58,9 +57,8 @@ module.exports = {
         }
       }
 
-      // === Nettoyage ===
       fs.rmSync(tempOutput, { recursive: true, force: true });
-      fs.rmSync(path.join(separatedDir, tempFolderName), { recursive: true, force: true });
+      fs.rmSync(htdemucsDir, { recursive: true, force: true });
     });
   }
 };
